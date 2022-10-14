@@ -3,6 +3,10 @@ import re
 import math
 import json
 
+
+ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789!\"'()-,.:;? "
+
+
 def read_file(file_name):
     f = open(file_name, "r")
 
@@ -110,3 +114,34 @@ def laplace_probs(sorted_grams, alpha=0.1):
 def save_weights(data, filename):
     with open(filename, 'w') as outfile:
         json.dump(data, outfile)
+
+
+def get_continuations(ngrams):
+    conts = {}
+
+    for history in tqdm(ngrams, desc='Counting Continuations'):
+        for letter in ALPHABET:
+            if letter in ngrams[history].keys():
+                if letter in conts:
+                    conts[letter] += 1
+                else:
+                    conts[letter] = 1
+
+    return conts
+
+
+def kneser_nay(sorted_grams, conts, discount=0.75, inter=0.00005):
+    l_probs = {}
+
+    for history in tqdm(sorted_grams, desc="Calculating Probabilities"):
+        l_probs[history] = {}
+        for char, count in sorted_grams[history].items():
+            if char not in ALPHABET:
+                continue
+            numerator = max((count - discount), 0)
+
+            prob = ((numerator / sum(sorted_grams[history].values())) + (inter * conts[char]))
+
+            l_probs[history][char] = prob
+
+    return l_probs

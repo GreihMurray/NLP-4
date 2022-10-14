@@ -48,13 +48,21 @@ def main():
 
     del sorted_freq['']
 
-    cleaned_freqs = utility.min_gram(sorted_freq, 5)
+    #cleaned_freqs = utility.min_gram(sorted_freq, 5)
 
-    all_probs = utility.laplace_probs(cleaned_freqs)
+    conts = utility.get_continuations(sorted_freq)
+
+    print(conts)
+
+    all_probs = utility.kneser_nay(sorted_freq, conts)
 
     check_freq_totals(all_probs)
 
-    utility.save_weights(all_probs, 'swahili.json')
+    # all_probs = utility.laplace_probs(sorted_freq)
+    #
+    # check_freq_totals(all_probs)
+    #
+    # utility.save_weights(all_probs, 'swahili.json')
 
     # probs = combine_probs(all_probs)
     #

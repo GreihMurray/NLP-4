@@ -120,6 +120,8 @@ def get_continuations(ngrams):
     conts = {}
 
     for history in tqdm(ngrams, desc='Counting Continuations'):
+        if len(history) > 1:
+            continue
         for letter in ALPHABET:
             if letter in ngrams[history].keys():
                 if letter in conts:
@@ -130,7 +132,7 @@ def get_continuations(ngrams):
     return conts
 
 
-def kneser_nay(sorted_grams, conts, discount=0.75, inter=0.00005):
+def kneser_nay(sorted_grams, conts, discount=0.000001):
     l_probs = {}
 
     for history in tqdm(sorted_grams, desc="Calculating Probabilities"):
@@ -140,7 +142,9 @@ def kneser_nay(sorted_grams, conts, discount=0.75, inter=0.00005):
                 continue
             numerator = max((count - discount), 0)
 
-            prob = ((numerator / sum(sorted_grams[history].values())) + (inter * conts[char]))
+            interpolation = (discount / sum(sorted_grams[history].values()))
+
+            prob = ((numerator / sum(sorted_grams[history].values())) + (interpolation * conts[char]))
 
             l_probs[history][char] = prob
 

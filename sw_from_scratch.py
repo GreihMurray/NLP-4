@@ -40,7 +40,6 @@ def main():
 
     for i in range(1, MAX_GRAM+1):
         ngrams = utility.gen_n_grams(data, n=i)
-        #freqs = utility.calc_freqs(ngrams)
 
         all_data[i] = ngrams
 
@@ -48,27 +47,14 @@ def main():
 
     del sorted_freq['']
 
-    #cleaned_freqs = utility.min_gram(sorted_freq, 5)
-
     conts = utility.get_continuations(sorted_freq)
-
-    print(conts)
 
     all_probs = utility.kneser_nay(sorted_freq, conts)
 
     check_freq_totals(all_probs)
 
-    # all_probs = utility.laplace_probs(sorted_freq)
-    #
-    # check_freq_totals(all_probs)
-    #
-    # utility.save_weights(all_probs, 'swahili.json')
+    utility.save_weights(all_probs, 'swahili.json')
 
-    # probs = combine_probs(all_probs)
-    #
-    # entropy = utility.calc_entropy(probs)
-    #
-    # print(entropy)
 
 
 if __name__ == '__main__':

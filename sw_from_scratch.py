@@ -27,6 +27,12 @@ def combine_probs(all_probs):
     return combined
 
 
+def check_freq_totals(all_probs):
+    for prob in all_probs:
+        if len(prob) < 4:
+            print(prob, sum(all_probs[prob].values()))
+
+
 def main():
     data = utility.read_file('sw-train.txt')
 
@@ -38,14 +44,18 @@ def main():
 
         all_data[i] = ngrams
 
-    print(all_data.keys())
+    sorted_freq = utility.sort_freqs(all_data, MAX_GRAM)
 
-    sorted_freq = utility.sort_freqs(all_data)
+    del sorted_freq['']
 
-    print('C', sorted_freq['c'])
-    print(min(sorted_freq['c'], key=sorted_freq['c']), sorted_freq[min(sorted_freq['c'], key=sorted_freq['c'])])
+    cleaned_freqs = utility.min_gram(sorted_freq, 5)
 
-    # all_probs = calc_all_probs(all_data)
+    all_probs = utility.laplace_probs(cleaned_freqs)
+
+    check_freq_totals(all_probs)
+
+    utility.save_weights(all_probs, 'swahili.json')
+
     # probs = combine_probs(all_probs)
     #
     # entropy = utility.calc_entropy(probs)

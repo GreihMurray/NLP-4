@@ -1,8 +1,8 @@
-from collections import Counter
 from tqdm import tqdm
 import utility
+import gc
 
-MAX_GRAM = 5
+MAX_GRAM = 10
 
 
 def calc_all_probs(gram_data):
@@ -33,8 +33,9 @@ def check_freq_totals(all_probs):
             print(prob, sum(all_probs[prob].values()))
 
 
+
 def main():
-    data = utility.read_file('sw-train.txt')
+    data, hold_out = utility.read_file('sw-train.txt')
 
     all_data = {}
 
@@ -43,18 +44,29 @@ def main():
 
         all_data[i] = ngrams
 
-    sorted_freq = utility.sort_freqs(all_data, MAX_GRAM)
+    del data
+    gc.collect()
 
+    sorted_freq = utility.sort_freqs(all_data, MAX_GRAM)
+    del all_data
     del sorted_freq['']
+    gc.collect()
+    # sorted_freq = utility.min_gram(sorted_freq, 1)
 
     conts = utility.get_continuations(sorted_freq)
 
     all_probs = utility.kneser_nay(sorted_freq, conts)
 
+    del sorted_freq, conts
+    gc.collect()
+
     check_freq_totals(all_probs)
 
     utility.save_weights(all_probs, 'swahili.json')
 
+    entropy = utility.evaluate(all_probs, hold_out, max_history=MAX_GRAM)
+
+    print(entropy)
 
 
 if __name__ == '__main__':

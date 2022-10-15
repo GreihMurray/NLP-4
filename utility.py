@@ -1,6 +1,6 @@
 from tqdm import tqdm
 import re
-import math
+from math import log2
 import json
 
 
@@ -14,9 +14,12 @@ def read_file(file_name):
     split_data = []
 
     for line in tqdm(full_text, desc='Splitting words'):
-        split_data.append(line.lower())
+        split_data.append(line.lower().strip())
 
-    return ' '.join(split_data)
+    train = ' '.join(split_data[:int(len(split_data) * 0.8)])
+    test = ' '.join(split_data[int(len(split_data) * 0.8):])
+
+    return train, test
 
 
 def calc_freqs(n_grams):
@@ -56,15 +59,7 @@ def min_gram(ngrams, min=5):
     cleaned_grams = {}
 
     for key in ngrams:
-        unk = 0
-        cleaned_grams[key] = {}
-        for letter, count in ngrams[key].items():
-            if count >= min:
-                cleaned_grams[key][letter] = count
-            else:
-                unk += count
-
-        cleaned_grams[key]['UNK'] = unk
+        cleaned_grams[key]['UNK'] = 1
 
     return cleaned_grams
 
@@ -76,11 +71,44 @@ def gen_n_grams(data, n=3):
     return n_grams
 
 
-def calc_entropy(probs):
-    entropy = 0
+def history_to_grams(history):
+    grams = []
 
-    for prob in tqdm(probs.values(), desc="Calculating Entropy: "):
-        entropy -= (prob * math.log(prob, 2))
+    for i in range(len(history), 0, -1):
+        grams.append(''.join(history[i:]))
+
+    return grams
+
+
+
+def evaluate(probs, text, max_history=5):
+    history = []
+    entropy = 0
+    count = 0
+
+    for cur_char in tqdm(text, desc='Calculating Entropy'):
+        count += 1
+        hist_grams = history_to_grams(history)
+
+        cur_prob = 0
+        init_prob = 0
+
+        for char in ALPHABET:
+            init_prob += sum(probs[char].values())
+
+        cur_prob += sum(probs[cur_char].values()) / init_prob
+
+        for gram in hist_grams:
+            try:
+                cur_prob += ((1 / len(hist_grams)) * (probs[gram][cur_char]))
+            except KeyError:
+                continue
+
+        entropy -= ((1 / len(text)) * log2(cur_prob))
+
+        if len(history) >= max_history:
+            history.pop(0)
+        history.append(cur_char)
 
     return entropy
 
@@ -138,8 +166,6 @@ def kneser_nay(sorted_grams, conts, discount=0.000001):
     for history in tqdm(sorted_grams, desc="Calculating Probabilities"):
         l_probs[history] = {}
         for char, count in sorted_grams[history].items():
-            if char not in ALPHABET:
-                continue
             numerator = max((count - discount), 0)
 
             interpolation = (discount / sum(sorted_grams[history].values()))

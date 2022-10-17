@@ -2,7 +2,7 @@ from tqdm import tqdm
 import utility
 import gc
 
-MAX_GRAM = 12
+MAX_GRAM = 15
 
 
 def calc_all_probs(gram_data):
@@ -35,7 +35,7 @@ def check_freq_totals(all_probs):
 
 
 def main():
-    data, hold_out = utility.read_file('sw-train.txt')
+    data, hold_out = utility.read_file('cwe-train.txt')
 
     all_data = {}
 
@@ -59,9 +59,9 @@ def main():
     del sorted_freq, conts
     gc.collect()
 
-    #check_freq_totals(all_probs)
+    check_freq_totals(all_probs)
 
-    utility.save_weights(all_probs, 'swahili.json')
+    utility.save_weights(all_probs, 'kwere.json')
 
     entropy = utility.evaluate(all_probs, hold_out, max_history=MAX_GRAM)
 

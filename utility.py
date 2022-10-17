@@ -13,7 +13,7 @@ def read_file(file_name):
     full_text = f.read().split(" ")
     split_data = []
 
-    for line in tqdm(full_text, desc='Splitting words'):
+    for line in full_text: #tqdm(full_text, desc='Splitting words'):
         split_data.append(line.lower().strip())
 
     train = ' '.join(split_data[:int(len(split_data) * 0.8)])
@@ -94,7 +94,10 @@ def evaluate(probs, text, max_history=5):
         init_prob = 0
 
         for char in ALPHABET:
-            init_prob += sum(probs[char].values())
+            try:
+                init_prob += sum(probs[char].values())
+            except KeyError:
+                continue
 
         cur_prob += sum(probs[cur_char].values()) / init_prob
 

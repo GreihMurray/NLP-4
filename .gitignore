@@ -2,3 +2,6 @@
 __pycache__/
 *.txt
 *.json
+*.db
+make-db.py
+test.py

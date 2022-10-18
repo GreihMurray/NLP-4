@@ -1,6 +1,8 @@
+import gc
+import json
 from tqdm import tqdm
 import utility
-import gc
+import sqlite3 as sql
 
 MAX_GRAM = 12
 
@@ -33,39 +35,84 @@ def check_freq_totals(all_probs):
             print(prob, sum(all_probs[prob].values()))
 
 
-
 def main():
+    conn = sql.connect('sw-probs.db')
+    print('Database Connection Established')
+
     data, hold_out = utility.read_file('sw-train.txt')
 
-    all_data = {}
+    conts = {}
 
-    for i in range(1, MAX_GRAM+1):
+    for i in range(1, MAX_GRAM + 1):
+        if i == 1:
+            continue
         ngrams = utility.gen_n_grams(data, n=i)
 
-        all_data[i] = ngrams
+        sorted_freq = utility.sort_freqs_sw(ngrams, MAX_GRAM)
+        if i == 2:
+            conts = utility.get_continuations(sorted_freq)
+        tmp_probs = utility.kneser_nay(sorted_freq, conts)
 
-    del data
+        cmd = 'INSERT INTO PROBS (`HISTORY`'
+        vals = ' VALUES ('
+        count = 0
 
-    sorted_freq = utility.sort_freqs(all_data, MAX_GRAM)
-    del all_data
-    del sorted_freq['']
-    gc.collect()
-    # sorted_freq = utility.min_gram(sorted_freq, 1)
+        for history, prob_dict in tqdm(tmp_probs.items(), desc='Writing to DB'):
+            cmd = 'INSERT INTO PROBS (`HISTORY`'
+            vals = ' VALUES ('
+            if '\'' in history:
+                new_hist = ''
+                for char in history:
+                    if char == '\'':
+                        new_hist += '\''
 
-    conts = utility.get_continuations(sorted_freq)
+                    new_hist += char
+                vals += '\'' + new_hist + '\''
+            else:
+                vals += '\'' + history + '\''
+            for letter, prob in prob_dict.items():
+                cmd += ',`' + letter + '`'
+                vals += ',' + str(prob) + ''
 
-    all_probs = utility.kneser_nay(sorted_freq, conts)
+            cmd += ')' + vals + ')'
 
-    del sorted_freq, conts
-    gc.collect()
+            conn.execute(cmd)
 
-    #check_freq_totals(all_probs)
+            conn.commit()
 
-    utility.save_weights(all_probs, 'swahili.json')
+        # try:
+        #     old_probs = json.load(open('swahiliTEST.json'))
+        #     all_probs = tmp_probs | old_probs
+        #
+        #     with open('swahiliTEST.json', 'w') as ofile:
+        #         json.dump(all_probs, ofile)
+        #
+        #     del old_probs, all_probs
+        #     gc.collect()
+        # except json.decoder.JSONDecodeError:
+        #     with open('swahiliTEST.json', 'w') as ofile:
+        #         json.dump(tmp_probs, ofile)
 
-    entropy = utility.evaluate(all_probs, hold_out, max_history=MAX_GRAM)
 
-    print(entropy)
+    # del all_data
+    # del sorted_freq['']
+    # gc.collect()
+    # # sorted_freq = utility.min_gram(sorted_freq, 1)
+    #
+    # conts = utility.get_continuations(sorted_freq)
+    #
+    # all_probs = utility.kneser_nay(sorted_freq, conts)
+    #
+    # del sorted_freq, conts
+    # gc.collect()
+    #
+    # check_freq_totals(all_probs)
+    # #
+    # # utility.save_weights(all_probs, 'swahili.json')
+    #
+    # entropy = utility.evaluate(all_probs, hold_out, max_history=MAX_GRAM)
+    #
+    # print(entropy)
 
 
 if __name__ == '__main__':

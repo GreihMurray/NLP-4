@@ -34,6 +34,26 @@ def calc_freqs(n_grams):
     return freqs
 
 
+def sort_freqs_sw(ngrams, max_gram):
+    sorted_freqs = {}
+
+    for gram in tqdm(ngrams, desc='Sorting'):
+        history = gram[:-1]
+        letter = gram[-1]
+        if len(letter) < 1:
+            continue
+
+        if history in sorted_freqs:
+            if letter in sorted_freqs[history]:
+                sorted_freqs[history][letter] += 1
+            else:
+                sorted_freqs[history][letter] = 1
+        else:
+            sorted_freqs[history] = {letter: 1}
+
+    return sorted_freqs
+
+
 def sort_freqs(ngrams, max_gram):
     sorted_freqs = {}
 

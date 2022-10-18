@@ -2,6 +2,7 @@ from tqdm import tqdm
 import re
 from math import log2
 import json
+import sqlite3 as sql
 
 
 ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789!\"'()-,.:;? "
@@ -99,6 +100,92 @@ def history_to_grams(history):
 
     return grams
 
+
+def sum_db_rows(db_row):
+    sum = 0
+    for row in db_row:
+        for entry in row[1:]:
+            if isinstance(entry, float):
+                sum += entry
+
+    return sum
+
+def sw_evaluate(text, max_history=5):
+    conn = sql.connect('sw-probs.db')
+    print('Database Connection Established')
+    unigrams = conn.execute(
+        'SELECT * FROM PROBS WHERE `HISTORY`=\'a\' OR`HISTORY`=\'b\' OR`HISTORY`=\'c\' OR`HISTORY`=\'d\' OR`HISTORY`=\'e\' OR`HISTORY`=\'f\' OR`HISTORY`=\'g\' OR`HISTORY`=\'h\' OR`HISTORY`=\'i\' OR`HISTORY`=\'j\' OR`HISTORY`=\'k\' OR`HISTORY`=\'l\' OR`HISTORY`=\'m\' OR`HISTORY`=\'n\' OR`HISTORY`=\'o\' OR`HISTORY`=\'p\' OR`HISTORY`=\'q\' OR`HISTORY`=\'r\' OR`HISTORY`=\'s\' OR`HISTORY`=\'t\' OR`HISTORY`=\'u\' OR`HISTORY`=\'v\' OR`HISTORY`=\'w\' OR`HISTORY`=\'x\' OR`HISTORY`=\'y\' OR`HISTORY`=\'z\' OR`HISTORY`=\'1\' OR`HISTORY`=\'2\' OR`HISTORY`=\'3\' OR`HISTORY`=\'4\' OR`HISTORY`=\'5\' OR`HISTORY`=\'6\' OR`HISTORY`=\'7\' OR`HISTORY`=\'8\' OR`HISTORY`=\'9\' OR`HISTORY`=\'0\' OR`HISTORY`=\'!\' OR`HISTORY`=\'?\' OR`HISTORY`=\'\'\'\' OR`HISTORY`=\'.\' OR`HISTORY`=\',\' OR`HISTORY`=\'(\' OR`HISTORY`=\')\' OR`HISTORY`=\':\' OR`HISTORY`=\';\' OR`HISTORY`=\' \' OR`HISTORY`=\'-\' OR`HISTORY`=\'"\'')
+
+    init_prob = sum_db_rows(unigrams)
+
+    history = []
+    entropy = 0
+    count = 0
+    len_text = len(text)
+
+    for cur_char in text: #tqdm(text, desc='Calculating Entropy'):
+        count += 1
+        hist_grams = history_to_grams(history)
+
+        cur_prob = 0
+        cmd = "SELECT * FROM PROBS WHERE `HISTORY`='" + cur_char + "'"
+
+        if '\'' in cur_char:
+            new_char = '\'\''
+            cmd = "SELECT * FROM PROBS WHERE `HISTORY`='" + new_char + "'"
+
+        cur_char_prob = conn.execute(cmd)
+
+        cur_prob += sum_db_rows(cur_char_prob) / init_prob
+
+        new_char = ''
+        new_hist = ''
+
+        for gram in hist_grams:
+            new_char = ''
+            new_hist = ''
+
+            if len(gram) < 1:
+                continue
+
+            # if '\'' in cur_char:
+            #     new_char = '\'\''
+            # else:
+            new_char = cur_char
+
+            if '\'' in gram:
+                new_hist = ''
+                for char in history:
+                    if char == '\'':
+                        new_hist += '\''
+
+                    new_hist += char
+            else:
+                new_hist = gram
+
+            cmd = "SELECT `" + new_char + "` FROM PROBS WHERE `HISTORY`='" + new_hist + "'"
+            prob = conn.execute(cmd)
+
+            new_thing = prob.fetchall()
+
+            if len(new_thing) < 1:
+                continue
+
+            try:
+                cur_prob += ((1 / len(hist_grams)) * (new_thing[0][0]))
+            except TypeError:
+                continue
+
+        entropy -= ((1 / len(text)) * log2(cur_prob))
+        print('\rCurrent entropy: ', entropy, '\t', round(((count/len_text) * 100), 2), '% Done', end='', sep='')
+
+        if len(history) >= max_history:
+            history.pop(0)
+        history.append(cur_char)
+
+    print('\n')
+
+    return entropy
 
 
 def evaluate(probs, text, max_history=5):

@@ -4,7 +4,7 @@ from tqdm import tqdm
 import utility
 import sqlite3 as sql
 
-MAX_GRAM = 12
+MAX_GRAM = 15
 
 
 def calc_all_probs(gram_data):
@@ -33,6 +33,14 @@ def check_freq_totals(all_probs):
     for prob in all_probs:
         if len(prob) < 4:
             print(prob, sum(all_probs[prob].values()))
+
+
+def eval():
+    data, hold_out = utility.read_file('sw-train.txt')
+
+    entropy = utility.sw_evaluate(hold_out, 5)
+
+    print(entropy)
 
 
 def main():

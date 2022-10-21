@@ -1,9 +1,10 @@
 from tqdm import tqdm
 import utility
 import gc
+import sqlite3 as sql
 
 MAX_GRAM = 15
-
+ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789!\"'()-,.:;? "
 
 def calc_all_probs(gram_data):
     probs = {}
@@ -34,6 +35,71 @@ def check_freq_totals(all_probs):
 
 
 
+def interpolate(cwe):
+    conn_main = sql.connect('sw-probs.db')
+    print('Loading DB into Memory')
+    conn = sql.connect(':memory:')
+    conn_main.backup(conn)
+    conn.execute('CREATE INDEX Idx1 ON PROBS(HISTORY)')
+    print('Database Connection Established')
+
+    sw_weight = 0.0
+    cwe_weight = 1.0
+
+    for history, probs in tqdm(cwe.items(), desc='Interpolating Weights'):
+        if len(history) > 12:
+            continue
+
+        if len(history) < 1:
+            continue
+
+        new_hist = ''
+
+        if '\'' in history:
+            for char in history:
+                if char == '\'':
+                    new_hist += '\''
+                new_hist += char
+        else:
+            new_hist = history
+
+        #print("`", history, "`", "`", new_hist, "`", sep='')
+
+        cmd = 'SELECT * FROM PROBS WHERE `HISTORY`=\'' + new_hist + '\''
+        swp = conn.execute(cmd)
+        swp = swp.fetchall()
+
+        if len(swp) <= 0:
+            continue
+
+        swp = swp[0][1:]
+        sw_d = {}
+
+        for i in range(0, len(ALPHABET)):
+            if isinstance(swp[i], float):
+                sw_d[ALPHABET[i]] = swp[i]
+
+        #
+        # cmd += new_hist
+        #
+        # swp = conn.execute(cmd)
+
+        share = any(check in sw_d.keys() for check in probs.keys())
+
+        if not share:
+            continue
+
+        for key in probs.keys():
+            if key in sw_d.keys():
+                cwe[history][key] = (cwe[history][key] * cwe_weight) + (sw_d[key] * sw_weight)
+            else:
+                cwe[history][key] = cwe[history][key]
+
+    return cwe
+
+
+
+
 def main():
     data, hold_out = utility.read_file('cwe-train.txt')
 
@@ -58,6 +124,8 @@ def main():
 
     del sorted_freq, conts
     gc.collect()
+
+    all_probs = interpolate(all_probs)
 
     check_freq_totals(all_probs)
 

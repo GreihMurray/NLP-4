@@ -4,7 +4,7 @@ from tqdm import tqdm
 import utility
 import sqlite3 as sql
 
-MAX_GRAM = 15
+MAX_GRAM = 12 # Need to gen 12-15 grams
 
 
 def calc_all_probs(gram_data):
@@ -38,7 +38,7 @@ def check_freq_totals(all_probs):
 def eval():
     data, hold_out = utility.read_file('sw-train.txt')
 
-    entropy = utility.sw_evaluate(hold_out, 5)
+    entropy = utility.sw_evaluate(hold_out, 20)
 
     print(entropy)
 
@@ -59,6 +59,7 @@ def main():
         sorted_freq = utility.sort_freqs_sw(ngrams, MAX_GRAM)
         if i == 2:
             conts = utility.get_continuations(sorted_freq)
+
         tmp_probs = utility.kneser_nay(sorted_freq, conts)
 
         cmd = 'INSERT INTO PROBS (`HISTORY`'
@@ -86,7 +87,8 @@ def main():
 
             conn.execute(cmd)
 
-            conn.commit()
+        print("\nStoring on Disk\n")
+        conn.commit()
 
         # try:
         #     old_probs = json.load(open('swahiliTEST.json'))

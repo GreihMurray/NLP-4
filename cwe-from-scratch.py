@@ -84,20 +84,17 @@ def interpolate(cwe):
         #
         # swp = conn.execute(cmd)
 
-        share = any(check in sw_d.keys() for check in probs.keys())
+        shared = sw_d.keys() | probs.keys()
 
-        if not share:
-            continue
-
-        for key in probs.keys():
-            if key in sw_d.keys():
+        for key in shared:
+            if key in sw_d.keys() and key in probs.keys():
                 cwe[history][key] = (cwe[history][key] * cwe_weight) + (sw_d[key] * sw_weight)
-            else:
-                cwe[history][key] = cwe[history][key]
+            elif key in sw_d.keys() and key not in probs.keys():
+                cwe[history][key] = sw_d[key] * sw_weight
+            elif key in probs.keys() and key not in sw_d.keys():
+                cwe[history][key] = cwe[history][key] * cwe_weight
 
     return cwe
-
-
 
 
 def main():

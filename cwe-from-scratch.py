@@ -122,7 +122,7 @@ def main():
     del sorted_freq, conts
     gc.collect()
 
-    all_probs = interpolate(all_probs)
+    #all_probs = interpolate(all_probs)
 
     check_freq_totals(all_probs)
 

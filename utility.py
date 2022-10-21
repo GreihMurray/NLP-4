@@ -270,12 +270,20 @@ def get_continuations(ngrams):
     return conts
 
 
-def kneser_nay(sorted_grams, conts, discount=0.000001):
+def kneser_nay(sorted_grams, conts):
     l_probs = {}
+    discount = 0
 
     for history in tqdm(sorted_grams, desc="Calculating Probabilities"):
         l_probs[history] = {}
         for char, count in sorted_grams[history].items():
+            if count == 1:
+                discount = 5
+            if count == 2:
+                discount = 0.00005
+            else:
+                discount = 0.00001
+
             numerator = max((count - discount), 0)
 
             interpolation = (discount / sum(sorted_grams[history].values()))

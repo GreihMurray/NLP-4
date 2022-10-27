@@ -36,9 +36,9 @@ def check_freq_totals(all_probs):
 
 
 def eval():
-    data, hold_out = utility.read_file('sw-train.txt')
+    data, hold_out = utility.read_file('sw-test.txt')
 
-    entropy = utility.sw_evaluate(hold_out, 20)
+    entropy = utility.sw_evaluate(hold_out, 12)
 
     print(entropy)
 
@@ -126,4 +126,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    eval()

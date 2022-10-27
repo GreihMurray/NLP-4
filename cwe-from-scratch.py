@@ -3,7 +3,7 @@ import utility
 import gc
 import sqlite3 as sql
 
-MAX_GRAM = 15
+MAX_GRAM = 8
 ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789!\"'()-,.:;? "
 
 def calc_all_probs(gram_data):
@@ -124,7 +124,7 @@ def main():
 
     #all_probs = interpolate(all_probs)
 
-    check_freq_totals(all_probs)
+    #check_freq_totals(all_probs)
 
     utility.save_weights(all_probs, 'kwere.json')
 
@@ -133,5 +133,16 @@ def main():
     print(entropy)
 
 
+def eval():
+    data = utility.read_test_file('cwe-test.txt')
+    probs = utility.load_weights('kwere.json')
+
+    print('Data loaded')
+
+    entropy = utility.evaluate(probs, data, max_history=MAX_GRAM)
+
+    print(entropy)
+
+
 if __name__ == '__main__':
-    main()
+    eval()

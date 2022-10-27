@@ -23,6 +23,18 @@ def read_file(file_name):
     return train, test
 
 
+def read_test_file(file_name):
+    f = open(file_name, "r")
+
+    full_text = f.read().split(" ")
+    split_data = []
+
+    for line in full_text: #tqdm(full_text, desc='Splitting words'):
+        split_data.append(line.lower().strip())
+
+    return ' '.join(split_data)
+
+
 def calc_freqs(n_grams):
     freqs = {}
 
@@ -111,7 +123,11 @@ def sum_db_rows(db_row):
     return sum
 
 def sw_evaluate(text, max_history=5):
-    conn = sql.connect('sw-probs.db')
+    conn_main = sql.connect('sw-probs.db')
+    print('Loading DB into Memory')
+    conn = sql.connect(':memory:')
+    conn_main.backup(conn)
+    conn.execute('CREATE INDEX Idx1 ON PROBS(HISTORY)')
     print('Database Connection Established')
     unigrams = conn.execute(
         'SELECT * FROM PROBS WHERE `HISTORY`=\'a\' OR`HISTORY`=\'b\' OR`HISTORY`=\'c\' OR`HISTORY`=\'d\' OR`HISTORY`=\'e\' OR`HISTORY`=\'f\' OR`HISTORY`=\'g\' OR`HISTORY`=\'h\' OR`HISTORY`=\'i\' OR`HISTORY`=\'j\' OR`HISTORY`=\'k\' OR`HISTORY`=\'l\' OR`HISTORY`=\'m\' OR`HISTORY`=\'n\' OR`HISTORY`=\'o\' OR`HISTORY`=\'p\' OR`HISTORY`=\'q\' OR`HISTORY`=\'r\' OR`HISTORY`=\'s\' OR`HISTORY`=\'t\' OR`HISTORY`=\'u\' OR`HISTORY`=\'v\' OR`HISTORY`=\'w\' OR`HISTORY`=\'x\' OR`HISTORY`=\'y\' OR`HISTORY`=\'z\' OR`HISTORY`=\'1\' OR`HISTORY`=\'2\' OR`HISTORY`=\'3\' OR`HISTORY`=\'4\' OR`HISTORY`=\'5\' OR`HISTORY`=\'6\' OR`HISTORY`=\'7\' OR`HISTORY`=\'8\' OR`HISTORY`=\'9\' OR`HISTORY`=\'0\' OR`HISTORY`=\'!\' OR`HISTORY`=\'?\' OR`HISTORY`=\'\'\'\' OR`HISTORY`=\'.\' OR`HISTORY`=\',\' OR`HISTORY`=\'(\' OR`HISTORY`=\')\' OR`HISTORY`=\':\' OR`HISTORY`=\';\' OR`HISTORY`=\' \' OR`HISTORY`=\'-\' OR`HISTORY`=\'"\'')
@@ -252,6 +268,14 @@ def laplace_probs(sorted_grams, alpha=0.1):
 def save_weights(data, filename):
     with open(filename, 'w') as outfile:
         json.dump(data, outfile)
+
+
+def load_weights(filename):
+    data = {}
+    with open(filename, 'r') as infile:
+        data = json.load(infile)
+
+    return data
 
 
 def get_continuations(ngrams):
